@@ -1,0 +1,2077 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planificador Diario y Agenda Nominal de Técnicos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        /* Custom scrollbar to keep layout clean */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="border-b border-slate-200 bg-white px-6 py-4 sticky top-0 z-10 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-indigo-600 rounded-lg text-white shadow-md shadow-indigo-600/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+                        Planificador y Agenda Técnica
+                        <span id="badgeConnStatus" class="text-[10px] px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200 animate-pulse font-semibold">
+                            Conectando...
+                        </span>
+                    </h1>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <p class="text-xs text-slate-500 font-medium">Coordinación de técnicos, traslados y agenda de precisión.</p>
+                        <span class="text-slate-300">|</span>
+                        <span id="roleBadge" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200">
+                            👁️ Solo Lectura
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2.5">
+                <div id="securityControls" class="flex items-center gap-1.5 mr-1.5">
+                    <button id="btnAdminAccess" onclick="openLoginModal()" class="px-3.5 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Iniciar Sesión
+                    </button>
+                    <div id="adminOptions" class="hidden flex items-center gap-2">
+                        <span id="lblUserGreeting" class="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-2 rounded-lg border border-slate-200">
+                            👤 Hola, Usuario
+                        </span>
+                        <button id="btnSecurityConsole" onclick="openSuperSecurityPanel()" class="hidden px-3.5 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition flex items-center gap-1 shadow-sm">
+                            🛡️ Consola de Seguridad
+                        </button>
+                        <button onclick="logoutAdmin()" class="px-3 py-2 text-xs font-bold bg-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-700 rounded-lg transition">
+                            Salir
+                        </button>
+                    </div>
+                </div>
+
+                <button id="btnExportCSV" onclick="exportToCSV()" class="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition duration-200 flex items-center gap-1.5 shadow-md shadow-emerald-600/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Exportar Agenda
+                </button>
+                <button id="btnDemoData" onclick="loadDemoData()" class="hidden px-4 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition duration-200 flex items-center gap-1.5 border border-slate-300 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                    Cargar Demo
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <section id="leftSidebar" class="lg:col-span-4 flex flex-col gap-6">
+            
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                <div id="lockOverlay1" class="absolute inset-0 bg-slate-50/75 backdrop-blur-[1px] z-20 flex flex-col items-center justify-center text-center p-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-amber-500 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <p class="text-xs font-bold text-slate-700">Panel Bloqueado</p>
+                    <p class="text-[10px] text-slate-500 font-semibold mt-0.5">Permisos insuficientes para editar el plantel</p>
+                </div>
+
+                <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center justify-between">
+                    <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        1. Plantel de Técnicos
+                    </span>
+                    <span id="labelTotalNetHours" class="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">32.0 hs/día</span>
+                </h2>
+                
+                <p class="text-[11px] text-slate-500 mb-4 leading-relaxed font-medium">Definí el nombre de tus técnicos y su jornada de trabajo. La capacidad total del día se actualiza sola.</p>
+
+                <div class="space-y-4">
+                    <div class="flex gap-2">
+                        <input type="text" id="newTechName" placeholder="Nombre (Ej: Juan)" class="flex-1 bg-white border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-1.5 text-xs text-slate-950 focus:outline-none shadow-sm">
+                        <button onclick="handleAddTech()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition shadow-sm">
+                            + Sumar
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] text-slate-600 font-semibold mb-1">Jornada laboral típica (hs/día):</label>
+                        <input type="number" id="inputHoursPerDay" value="8" min="1" max="16" class="w-full bg-white border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg p-2 text-xs font-bold text-slate-900 text-center focus:outline-none shadow-sm">
+                    </div>
+
+                    <div class="border-t border-slate-200 pt-3">
+                        <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Técnicos Activos:</h3>
+                        <div id="techListContainer" class="space-y-1.5 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                <div id="lockOverlay2" class="absolute inset-0 bg-slate-50/75 backdrop-blur-[1px] z-20 flex flex-col items-center justify-center text-center p-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-amber-500 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <p class="text-xs font-bold text-slate-700">Formulario Bloqueado</p>
+                    <p class="text-[10px] text-slate-500 font-semibold mt-0.5">Permisos insuficientes para registrar obras</p>
+                </div>
+
+                <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                    2. Registrar Obra / Servicio
+                </h2>
+
+                <div id="editingBanner" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-lg mb-3 flex justify-between items-center shadow-sm animate-pulse">
+                    <span class="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                        Editando: <span id="editingProjectName" class="italic text-slate-950 font-extrabold"></span>
+                    </span>
+                    <button type="button" onclick="cancelEditing()" class="text-amber-700 hover:text-amber-950 text-xs font-bold underline transition">Cancelar</button>
+                </div>
+
+                <form id="projectForm" onsubmit="handleProjectSubmit(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Cliente / Nombre del Trabajo:</label>
+                        <input type="text" id="projName" required placeholder="Ej: Argomys Haedo - Service NVR" class="w-full bg-white border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg p-2.5 text-sm text-slate-900 focus:outline-none shadow-sm">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Fecha de Inicio:</label>
+                            <input type="date" id="projStart" required class="w-full bg-white border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg p-2 text-sm text-slate-900 focus:outline-none text-center shadow-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Fecha de Fin:</label>
+                            <input type="date" id="projEnd" required class="w-full bg-white border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg p-2 text-sm text-slate-900 focus:outline-none text-center shadow-sm font-medium">
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-3.5 rounded-lg border border-slate-200 space-y-3.5">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-2">Asignar Técnicos Nominados:</label>
+                            <div id="techCheckboxesContainer" class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Hs Trabajo/día:</label>
+                            <input type="number" id="projHoursPerTech" min="1" max="16" value="8" oninput="updateEsfuerzoEquiv()" class="w-full bg-white border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg p-2 text-xs text-slate-900 text-center font-bold focus:outline-none shadow-sm">
+                        </div>
+
+                        <div class="h-px bg-slate-200"></div>
+
+                        <div class="flex justify-between text-xs font-bold">
+                            <span class="text-slate-500">Consumo diario de capacidad:</span>
+                            <span id="labelEsfuerzoEquiv" class="text-indigo-600 font-extrabold text-sm">11.0 hs/día</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submitFormButton" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-sm transition duration-200 shadow-md shadow-indigo-600/10 flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                        Agendar en Calendario
+                    </button>
+
+                    <button type="button" id="cancelFormButton" onclick="cancelEditing()" class="hidden w-full py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 rounded-lg font-bold text-xs transition">
+                        Cancelar Edición
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                <div id="lockOverlay3" class="absolute inset-0 bg-slate-50/75 backdrop-blur-[1px] z-20 flex flex-col items-center justify-center text-center p-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-amber-500 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <p class="text-xs font-bold text-slate-700">Panel Bloqueado</p>
+                    <p class="text-[10px] text-slate-500 font-semibold mt-0.5">Permisos insuficientes para simular técnicos</p>
+                </div>
+
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
+                        3. Simular Técnicos Extra
+                    </h2>
+                </div>
+                <p class="text-xs text-slate-500 font-medium mb-4 leading-relaxed">Simulá la contratación de técnicos de refuerzo (tercerizados o changas) para cubrir picos críticos en días puntuales.</p>
+                
+                <form id="simForm" onsubmit="handleSimSubmit(event)" class="space-y-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Desde el:</label>
+                            <input type="date" id="simStart" required class="w-full bg-white border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg p-2 text-xs text-slate-900 text-center focus:outline-none shadow-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Hasta el:</label>
+                            <input type="date" id="simEnd" required class="w-full bg-white border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg p-2 text-xs text-slate-900 text-center focus:outline-none shadow-sm font-medium">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Cant. Refuerzos:</label>
+                            <input type="number" id="simCount" min="1" value="1" class="w-full bg-white border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg p-2 text-xs text-center text-slate-900 font-bold focus:outline-none shadow-sm">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold text-xs transition duration-200 shadow-sm">
+                                Aplicar Parche
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="simListContainer" class="mt-4 space-y-2 max-h-32 overflow-y-auto pr-1 hidden">
+                    <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Simulaciones de Refuerzo:</h3>
+                    <div id="simList" class="space-y-1.5"></div>
+                </div>
+            </div>
+
+        </section>
+
+        <section id="rightSection" class="lg:col-span-8 flex flex-col gap-6 w-full">
+            
+            <div id="techDashboardCard" class="hidden bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 p-6 rounded-2xl shadow-md w-full max-w-4xl mx-auto">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-indigo-200/60 pb-4 mb-4">
+                    <div>
+                        <span class="text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-full">
+                            Tu Agenda Diaria
+                        </span>
+                        <h2 id="techWelcomeName" class="text-xl font-black text-slate-900 mt-1.5">👷 ¡Hola!</h2>
+                        <p class="text-xs text-slate-500 mt-0.5 font-semibold">Estas son tus actividades asignadas estrictamente para el día de hoy.</p>
+                    </div>
+                    <div class="text-right">
+                        <span id="techCurrentDayLabel" class="text-sm font-extrabold text-indigo-950 bg-white px-3 py-1.5 rounded-lg border border-indigo-200 inline-block shadow-sm">
+                            -
+                        </span>
+                    </div>
+                </div>
+
+                <div id="techTodayTasksContainer" class="space-y-4">
+                </div>
+            </div>
+
+            <div id="globalAnalyticsContainer" class="flex flex-col gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Pico de Demanda Diario</p>
+                            <h3 id="kpiPeakDemand" class="text-xl font-bold text-slate-900 mt-1">-</h3>
+                            <p id="kpiPeakWeeks" class="text-[10px] text-slate-500 font-semibold mt-0.5">Sin datos cargados</p>
+                        </div>
+                        <div class="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Déficit de Horas Crítico</p>
+                            <h3 id="kpiMaxDeficit" class="text-xl font-bold text-rose-600 mt-1">0.0 hs</h3>
+                            <p id="kpiDeficitStatus" class="text-[10px] text-emerald-600 font-bold mt-0.5">Capacidad OK hoy</p>
+                        </div>
+                        <div class="p-3 bg-rose-50 text-rose-600 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Estado de Cobertura</p>
+                            <h3 id="kpiActionAdvice" class="text-sm font-bold text-slate-900 mt-1">Todo Cubierto</h3>
+                            <p class="text-[10px] text-slate-500 font-semibold mt-0.5">Cálculo en base real</p>
+                        </div>
+                        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-start">
+                        <button onclick="shiftViewportDays(-14)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1 border border-slate-300 shadow-sm">
+                            &laquo; -2 Semanas
+                        </button>
+                        <button onclick="shiftViewportDays(-1)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1 border border-slate-300 shadow-sm">
+                            &lsaquo; -1 Día
+                        </button>
+                    </div>
+                    
+                    <div class="text-xs font-bold text-slate-800 text-center flex flex-col gap-1">
+                        <span class="text-slate-500 uppercase tracking-widest text-[9px] font-bold">Ventana de Planificación (15 Días Visibles)</span>
+                        <span id="labelViewportRange" class="text-sm text-indigo-600 font-extrabold">Cargando fechas...</span>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-start">
+                        <button onclick="shiftViewportDays(1)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1 border border-slate-300 shadow-sm">
+                            +1 Día &rsaquo;
+                        </button>
+                        <button onclick="shiftViewportDays(14)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1 border border-slate-300 shadow-sm">
+                            +2 Semanas &raquo;
+                        </button>
+                        <button onclick="resetViewportToToday()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow-sm" title="Volver al día de hoy">
+                            Hoy
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800">Cronograma Diario de Capacidad vs Demanda</h3>
+                            <p class="text-xs text-slate-500 font-semibold">Las barras muestran el esfuerzo neto real de tus tecnicos en la calle</p>
+                        </div>
+                        
+                        <div class="flex items-center gap-4 text-xs font-bold text-slate-600">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded bg-emerald-500/20 border border-emerald-500"></span>
+                                <span>Capacidad Base</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded bg-cyan-500/20 border border-cyan-500"></span>
+                                <span>Con Refuerzos</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-3.5 h-1 border-t-2 border-dashed border-indigo-500 inline-block"></span>
+                                <span>Demanda de Tareas</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relative w-full h-80 bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col justify-between">
+                        <div class="absolute inset-0 p-4 flex flex-col justify-between pointer-events-none">
+                            <div class="h-px w-full bg-slate-200"></div>
+                            <div class="h-px w-full bg-slate-200"></div>
+                            <div class="h-px w-full bg-slate-200"></div>
+                            <div class="h-px w-full bg-slate-200"></div>
+                            <div class="h-px w-full bg-slate-200"></div>
+                        </div>
+
+                        <div id="chartBarsContainer" class="relative z-10 w-full h-[88%] flex items-end justify-between gap-1 md:gap-2">
+                        </div>
+
+                        <div id="chartXLabels" class="relative z-10 w-full h-[8%] flex justify-between items-center text-[10px] text-slate-600 font-bold select-none">
+                        </div>
+                    </div>
+
+                    <div id="deficitWarningPanel" class="hidden bg-rose-50 border border-rose-200 p-4 rounded-xl flex items-start gap-3">
+                        <span class="p-2 bg-rose-100 text-rose-600 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        </span>
+                        <div>
+                            <h4 class="text-sm font-bold text-rose-800">¡Alerta de Sobrecarga Detectada!</h4>
+                            <p id="deficitWarningText" class="text-xs text-rose-600 mt-1 leading-relaxed font-semibold">Hay jornadas con más demanda que capacidad disponible. Se aconseja reasignar prioridades o contratar personal eventual.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-850">Grid de Coordinación de Agenda Técnica</h3>
+                        <p class="text-xs text-slate-500 font-semibold">Mirá de forma clara a dónde va cada tecnico. Celdas rojas (<span class="text-rose-600 font-bold">!</span>) alertan sobrecarga del técnico.</p>
+                    </div>
+
+                    <div class="overflow-x-auto custom-scrollbar border border-slate-200 rounded-xl bg-slate-50 shadow-inner">
+                        <table class="w-full text-left text-xs table-fixed min-w-[1000px]">
+                            <thead>
+                                <tr id="agendaGridHeaderRow" class="bg-slate-100 border-b border-slate-200 text-slate-600 font-bold">
+                                    <th class="p-3 w-40 sticky left-0 bg-slate-100 border-r border-slate-200 z-10 font-bold uppercase tracking-wider">Técnico</th>
+                                    <th class="p-2 text-center w-24">Día 1</th>
+                                    <th class="p-2 text-center w-24">Día 2</th>
+                                    <th class="p-2 text-center w-24">Día 3</th>
+                                    <th class="p-2 text-center w-24">Día 4</th>
+                                    <th class="p-2 text-center w-24">Día 5</th>
+                                    <th class="p-2 text-center w-24">Día 6</th>
+                                    <th class="p-2 text-center w-24">Día 7</th>
+                                    <th class="p-2 text-center w-24">Día 8</th>
+                                    <th class="p-2 text-center w-24">Día 9</th>
+                                    <th class="p-2 text-center w-24">Día 10</th>
+                                    <th class="p-2 text-center w-24">Día 11</th>
+                                    <th class="p-2 text-center w-24">Día 12</th>
+                                    <th class="p-2 text-center w-24">Día 13</th>
+                                    <th class="p-2 text-center w-24">Día 14</th>
+                                    <th class="p-2 text-center w-24">Día 15</th>
+                                </tr>
+                            </thead>
+                            <tbody id="agendaGridBody" class="divide-y divide-slate-200 bg-white">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800">Cronograma de Obras y Tareas Activas</h3>
+                            <p class="text-xs text-slate-500 font-semibold">Listado de actividades programadas de tus técnicos</p>
+                        </div>
+                        <span id="labelProjectCount" class="text-xs bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg text-indigo-600 font-bold">0 Proyectos</span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-xs text-slate-600 font-bold uppercase bg-slate-100 border border-slate-200">
+                                <tr>
+                                    <th class="p-3">Cliente / Proyecto</th>
+                                    <th class="p-3 text-center">Duración</th>
+                                    <th class="p-3 text-center">Asignados</th>
+                                    <th class="p-3 text-center">Esfuerzo Diario/Técnico</th>
+                                    <th class="p-3 text-center">Esfuerzo Total</th>
+                                    <th class="p-3 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="projectTableBody" class="divide-y divide-slate-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Modal de Inicio de Sesión: Autenticación por Usuario y Contraseña -->
+    <div id="loginModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-sm w-full p-6 animate-scaleIn">
+            <div class="text-center mb-5">
+                <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <h3 class="text-base font-bold text-slate-900">Iniciar Sesión</h3>
+                <p class="text-xs text-slate-500 font-medium mt-1">Ingresá tu usuario y contraseña personal.</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nombre de Usuario:</label>
+                    <input type="text" id="inputUsername" placeholder="Ej: admin, juan_tech" class="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg p-2 text-sm text-slate-900 focus:outline-none font-semibold">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Contraseña:</label>
+                    <input type="password" id="inputPassword" placeholder="••••••••" class="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg p-2 text-sm text-slate-900 focus:outline-none tracking-widest font-bold">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="closeLoginModal()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition">
+                        Cancelar
+                    </button>
+                    <button onclick="submitLogin()" class="w-1/2 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow-sm">
+                        Entrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consola de Seguridad (Exclusiva para Superusuario/Admin) -->
+    <div id="superSecurityPanelModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full p-6 animate-scaleIn">
+            <div class="flex justify-between items-start mb-4 pb-3 border-b border-slate-150">
+                <div class="flex items-center gap-3">
+                    <span class="p-2.5 bg-purple-100 text-purple-700 rounded-xl">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </span>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">Consola de Seguridad Maestra</h3>
+                        <p class="text-xs text-slate-500 font-medium mt-0.5">Gestión de Accesos, Roles y Vinculación de Técnicos.</p>
+                    </div>
+                </div>
+                <button onclick="closeSuperSecurityPanel()" class="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 p-2 rounded-lg transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                
+                <div class="md:col-span-7 flex flex-col gap-3">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Cuentas Registradas en el Sistema</span>
+                    <div id="userListContainer" class="border border-slate-200 rounded-xl bg-slate-50 p-2 space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar">
+                        <!-- User list dynamically populated here -->
+                    </div>
+                </div>
+
+                <div class="md:col-span-5 bg-white border border-purple-200 shadow-sm p-5 rounded-xl flex flex-col gap-4">
+                    <span class="text-xs font-black text-purple-800 uppercase tracking-wider flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                        Alta de Usuario
+                    </span>
+                    
+                    <form id="newUserForm" onsubmit="handleCreateUser(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Nombre Real / Cargo:</label>
+                            <input type="text" id="newRealName" required placeholder="Ej: Juan Perez" class="w-full bg-slate-50 border border-slate-300 focus:border-purple-500 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Nombre de Usuario (Login):</label>
+                            <input type="text" id="newUsername" required placeholder="Ej: juan_tecnico" class="w-full bg-slate-50 border border-slate-300 focus:border-purple-500 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none lowercase">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Contraseña Inicial:</label>
+                            <input type="text" id="newUserPass" required placeholder="Min. 4 caracteres" class="w-full bg-slate-50 border border-slate-300 focus:border-purple-500 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Rol de Acceso:</label>
+                            <select id="newUserRole" onchange="toggleNewUserRoleChange()" class="w-full bg-white border border-slate-300 focus:border-purple-500 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none font-bold">
+                                <option value="coordinator">👔 Coordinador (Gestiona Todo)</option>
+                                <option value="superuser">👑 Superusuario (Administrador)</option>
+                                <option value="technician">👷 Técnico (Solo ve su día)</option>
+                            </select>
+                        </div>
+                        <!-- Vínculo con Técnico, crucial para que el sistema sepa qué tareas mostrarle al loguearse -->
+                        <div id="divTechAssociation" class="hidden bg-indigo-50 p-3 rounded-lg border border-indigo-200">
+                            <label class="block text-[11px] font-extrabold text-indigo-900 mb-2">Vincular a perfil de Técnico:</label>
+                            <p class="text-[10px] text-indigo-700 mb-2 font-medium leading-tight">Elegí a qué técnico de la lista pertenece esta cuenta para que pueda ver su agenda.</p>
+                            <select id="selectAssociatedTech" class="w-full bg-white border border-indigo-300 focus:border-indigo-600 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none font-bold">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full py-3 mt-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition shadow-sm">
+                            Registrar Usuario Seguro
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="text-right pt-4 border-t border-slate-150 mt-5">
+                <button onclick="closeSuperSecurityPanel()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition">
+                    Cerrar Consola
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="border-t border-slate-200 bg-white py-4 px-6 mt-auto shadow-inner">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-slate-500 font-medium">
+            <p>© 2026 Planificador de Capacidad Técnica. Diseñado para optimizar el plantel operativo.</p>
+            <p id="lblAuditTrail" class="text-[11px] text-slate-500">Estado: <span id="saveStatusIndicator" class="text-amber-600 font-bold flex items-center gap-1"><span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span> Sincronizando...</span></p>
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Obtener fecha de hoy de forma dinámica según el sistema
+        const _systemDateObj = new Date();
+        const TODAY_DATE = _systemDateObj.toISOString().split('T')[0];
+
+        // --- 1. CONFIGURACIÓN INICIAL & STATE ---
+        let state = {
+            hoursPerDay: 8,
+            technicians: [
+                { id: "t1", name: "Juan", active: true },
+                { id: "t2", name: "Pedro", active: true },
+                { id: "t3", name: "Carlos", active: true },
+                { id: "t4", name: "Luis", active: true }
+            ],
+            projects: [],
+            simulations: [],
+            viewStartDate: TODAY_DATE,
+            
+            // SEGURIDAD: Base de datos de Usuarios
+            users: {
+                "admin": { password: "admin", role: "superuser", name: "Admin Principal" },
+                "coordinador": { password: "1234", role: "coordinator", name: "Coordinador de Guardia" },
+                "tecnico_juan": { password: "123", role: "technician", name: "Juan (Técnico)", associatedTechId: "t1" }
+            },
+            
+            // ESTADO DE SESIÓN LOCAL
+            currentRole: "reader",       // "reader" | "coordinator" | "superuser" | "technician"
+            currentUser: null,           
+            
+            // Auditoría
+            lastModifiedBy: "Sistema"
+        };
+
+        let db = null;
+        let auth = null;
+        let isSyncingFromCloud = false; 
+        let editingProjectId = null; 
+
+        // Obtener etiqueta legible para el día
+        function getDayLabel(dateStr) {
+            let d = new Date(dateStr + "T00:00:00");
+            const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+        }
+
+       // --- 2. COMUNICACIÓN EN NUBE (FIRESTORE) ---
+        const initFirebase = async () => {
+            // TUS CREDENCIALES REALES DE FIREBASE
+            const firebaseConfig = {
+                apiKey: "AIzaSyBTkuw_bcGRTZlU1cDzA3BTWzZiVrjIDbk",
+                authDomain: "gestion-trabajo-tecnico.firebaseapp.com",
+                projectId: "gestion-trabajo-tecnico",
+                storageBucket: "gestion-trabajo-tecnico.firebasestorage.app",
+                messagingSenderId: "711469179744",
+                appId: "1:711469179744:web:9de2f787706a5def24b405"
+            };
+
+            try {
+                // Inicializamos con tus datos de arriba
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                // Usamos un identificador fijo para tu app en GitHub
+                const appId = 'gestion-trabajo-tecnico';
+
+                updateConnectionStatus("Autenticando...", "yellow");
+
+                // El resto del inicio de sesión sigue igual
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        updateConnectionStatus("Sincronizado", "emerald");
+                        document.getElementById('saveStatusIndicator').innerHTML = `
+                            <span class="text-emerald-600 font-semibold flex items-center gap-1">
+                                <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 
+                                Nube Conectada
+                            </span>
+                        `;
+                        listenToCloudChanges(user.uid, appId);
+                    } else {
+                        updateConnectionStatus("Sin Acceso", "rose");
+                        loadFallbackDemoData();
+                    }
+                });
+
+            } catch (err) {
+                console.error("Firebase connection failed, falling back to local:", err);
+                updateConnectionStatus("Offline (Error de Red)", "rose");
+                loadFallbackDemoData();
+            }
+        };
+
+        const listenToCloudChanges = (uid, appId) => {
+            const stateDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'capacity_planner', 'shared_state_auth_v2');
+
+            onSnapshot(stateDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    isSyncingFromCloud = true;
+                    const cloudData = docSnap.data();
+                    
+                    state.hoursPerDay = cloudData.hoursPerDay ?? 8;
+                    state.technicians = cloudData.technicians ?? [];
+                    state.projects = cloudData.projects ?? [];
+                    state.simulations = cloudData.simulations ?? [];
+                    
+                    // Sincronizar listado de usuarios de la nube
+                    if (cloudData.users) {
+                        state.users = cloudData.users;
+                    }
+                    
+                    state.lastModifiedBy = cloudData.lastModifiedByUsername ?? "Sistema";
+
+                    document.getElementById('inputHoursPerDay').value = state.hoursPerDay;
+
+                    updateAppUI(false); 
+                    isSyncingFromCloud = false;
+                } else {
+                    isSyncingFromCloud = true;
+                    loadDemoDataInternal();
+                    isSyncingFromCloud = false;
+                    saveStateToCloud();
+                }
+            }, (error) => {
+                console.error("Error leyendo cambios de la nube:", error);
+                showTemporaryMessage("Fallo al sincronizar base de datos.", "error");
+            });
+        };
+
+        const saveStateToCloud = async () => {
+            if (!db || !auth || !auth.currentUser || isSyncingFromCloud) return;
+            
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const stateDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'capacity_planner', 'shared_state_auth_v2');
+
+            try {
+                document.getElementById('saveStatusIndicator').innerHTML = `
+                    <span class="text-indigo-600 font-semibold flex items-center gap-1">
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping"></span> 
+                        Enviando...
+                    </span>
+                `;
+
+                const modifiedByStr = state.currentUser ? `${state.currentUser} (${state.currentRole === 'superuser' ? 'Superuser' : state.currentRole === 'coordinator' ? 'Coordinador' : 'Técnico'})` : "Sistema";
+
+                await setDoc(stateDocRef, {
+                    hoursPerDay: state.hoursPerDay,
+                    technicians: state.technicians,
+                    projects: state.projects,
+                    simulations: state.simulations,
+                    users: state.users,
+                    lastModifiedByUid: auth.currentUser.uid,
+                    lastModifiedByUsername: modifiedByStr,
+                    lastModifiedAt: new Date().toISOString()
+                });
+
+                document.getElementById('saveStatusIndicator').innerHTML = `
+                    <span class="text-emerald-600 font-semibold flex items-center gap-1">
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 
+                        Guardado
+                    </span>
+                `;
+            } catch (e) {
+                console.error("Error guardando cambios en Firestore:", e);
+                showTemporaryMessage("Error al guardar en la nube", "error");
+            }
+        };
+
+        function loadFallbackDemoData() {
+            document.getElementById('saveStatusIndicator').innerHTML = `
+                <span class="text-amber-500 font-semibold flex items-center gap-1">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-500"></span> 
+                    Almacenamiento Local Temporal
+                </span>
+            `;
+            loadDemoDataInternal();
+            updateAppUI(false);
+        }
+
+        // Datos dinámicos calculados desde la fecha real de "Hoy" para que la demo funcione siempre bien
+        function loadDemoDataInternal() {
+            let nextDay = new Date(_systemDateObj); nextDay.setDate(nextDay.getDate() + 1);
+            let nextDayStr = nextDay.toISOString().split('T')[0];
+
+            let plusTwoDays = new Date(_systemDateObj); plusTwoDays.setDate(plusTwoDays.getDate() + 2);
+            let plusTwoDaysStr = plusTwoDays.toISOString().split('T')[0];
+
+            let plusFourDays = new Date(_systemDateObj); plusFourDays.setDate(plusFourDays.getDate() + 4);
+            let plusFourDaysStr = plusFourDays.toISOString().split('T')[0];
+
+            state.hoursPerDay = 8;
+            state.technicians = [
+                { id: "t1", name: "Juan", active: true },
+                { id: "t2", name: "Pedro", active: true },
+                { id: "t3", name: "Carlos", active: true },
+                { id: "t4", name: "Luis", active: true }
+            ];
+            state.projects = [
+                { id: "p1", name: "Instalación de Cámaras - Banco Central", startStr: TODAY_DATE, endStr: nextDayStr, assignedTechIds: ["t1", "t2"], hoursPerTech: 5.0 },
+                { id: "p2", name: "Mantenimiento Preventivo Servers", startStr: TODAY_DATE, endStr: TODAY_DATE, assignedTechIds: ["t3"], hoursPerTech: 6.0 },
+                { id: "p3", name: "Tendido Fibra Óptica Haedo", startStr: nextDayStr, endStr: plusFourDaysStr, assignedTechIds: ["t1", "t4"], hoursPerTech: 6.0 },
+                { id: "p4", name: "Soporte Crítico Cliente VIP", startStr: plusTwoDaysStr, endStr: plusFourDaysStr, assignedTechIds: ["t2", "t3"], hoursPerTech: 7.0 }
+            ];
+            state.simulations = [];
+            
+            // Garantizar usuarios base en el Demo
+            if (!state.users["admin"]) {
+                state.users = {
+                    "admin": { password: "admin", role: "superuser", name: "Admin Principal" },
+                    "coordinador": { password: "1234", role: "coordinator", name: "Coordinador de Guardia" },
+                    "tecnico_juan": { password: "123", role: "technician", name: "Juan (Técnico)", associatedTechId: "t1" }
+                };
+            }
+
+            document.getElementById('inputHoursPerDay').value = state.hoursPerDay;
+        }
+
+        // --- 3. LÓGICA DE CONTROL DE LA INTERFAZ Y RESTRICCIÓN DE PANELES ---
+        function updateAppUI(triggerSave = true) {
+            
+            const rBadge = document.getElementById('roleBadge');
+            const overlay1 = document.getElementById('lockOverlay1');
+            const overlay2 = document.getElementById('lockOverlay2');
+            const overlay3 = document.getElementById('lockOverlay3');
+            
+            const btnAccess = document.getElementById('btnAdminAccess');
+            const optsAdmin = document.getElementById('adminOptions');
+            const lblGreeting = document.getElementById('lblUserGreeting');
+            
+            const btnDemo = document.getElementById('btnDemoData');
+            const btnSecurityConsole = document.getElementById('btnSecurityConsole');
+            const btnExportCSV = document.getElementById('btnExportCSV');
+
+            const leftSidebar = document.getElementById('leftSidebar');
+            const globalAnalyticsContainer = document.getElementById('globalAnalyticsContainer');
+            const techDashboardCard = document.getElementById('techDashboardCard');
+            const rightSection = document.getElementById('rightSection');
+
+            // Reset visual: Todo visible y paneles estándar
+            techDashboardCard.classList.add('hidden');
+            globalAnalyticsContainer.classList.remove('hidden');
+            leftSidebar.classList.remove('hidden');
+            rightSection.classList.remove('col-span-12');
+            rightSection.classList.add('lg:col-span-8');
+            btnExportCSV.classList.remove('hidden');
+
+            if (state.currentRole === "superuser") {
+                rBadge.textContent = "👑 Superusuario";
+                rBadge.className = "text-[10px] px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 border border-purple-300 font-bold shadow-sm";
+                
+                overlay1.classList.add('hidden');
+                overlay2.classList.add('hidden');
+                overlay3.classList.add('hidden');
+                
+                btnAccess.classList.add('hidden');
+                optsAdmin.classList.remove('hidden');
+                
+                const realUserObj = state.users[state.currentUser] || {};
+                lblGreeting.innerHTML = `👤 Hola, <span class="font-extrabold text-indigo-700">${realUserObj.name || state.currentUser}</span>`;
+                
+                btnDemo.classList.remove('hidden');
+                btnSecurityConsole.classList.remove('hidden'); // Exclusivo de superusuario
+
+            } else if (state.currentRole === "coordinator") {
+                rBadge.textContent = "👔 Coordinador";
+                rBadge.className = "text-[10px] px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold shadow-sm";
+                
+                overlay1.classList.add('hidden');
+                overlay2.classList.add('hidden');
+                overlay3.classList.add('hidden');
+                
+                btnAccess.classList.add('hidden');
+                optsAdmin.classList.remove('hidden');
+                
+                const realUserObj = state.users[state.currentUser] || {};
+                lblGreeting.innerHTML = `👤 Hola, <span class="font-extrabold text-emerald-700">${realUserObj.name || state.currentUser}</span>`;
+                
+                btnDemo.classList.remove('hidden');
+                btnSecurityConsole.classList.add('hidden'); // No puede gestionar usuarios
+
+            } else if (state.currentRole === "technician") {
+                // TÉCNICO: Vista totalmente restringida. Solo ve "Su" día de trabajo en curso.
+                rBadge.textContent = "👷 Técnico";
+                rBadge.className = "text-[10px] px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 font-bold shadow-sm";
+                
+                // Ocultar toda la interfaz de administración
+                leftSidebar.classList.add('hidden');
+                globalAnalyticsContainer.classList.add('hidden');
+                btnExportCSV.classList.add('hidden');
+                
+                // Expandir la sección derecha para que ocupe todo
+                rightSection.classList.remove('lg:col-span-8');
+                rightSection.classList.add('col-span-12');
+
+                // Mostrar el dashboard propio
+                techDashboardCard.classList.remove('hidden');
+
+                btnAccess.classList.add('hidden');
+                optsAdmin.classList.remove('hidden');
+                const realUserObj = state.users[state.currentUser] || {};
+                lblGreeting.innerHTML = `👷 <span class="font-bold text-slate-700">${realUserObj.name || state.currentUser}</span>`;
+                
+                btnDemo.classList.add('hidden');
+                btnSecurityConsole.classList.add('hidden');
+
+                // Renderizar estrictamente SU día de HOY
+                renderTechnicianStrictView(realUserObj.associatedTechId, realUserObj.name || state.currentUser);
+                
+                // Cortamos ejecución acá porque no necesita renderizar gráficos ni agenda general
+                return; 
+            } else {
+                // MODO SOLO LECTURA (Visitante)
+                rBadge.textContent = "👁️ Solo Lectura";
+                rBadge.className = "text-[10px] px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200";
+                
+                overlay1.classList.remove('hidden');
+                overlay2.classList.remove('hidden');
+                overlay3.classList.remove('hidden');
+                
+                btnAccess.classList.remove('hidden');
+                optsAdmin.classList.add('hidden');
+                btnDemo.classList.add('hidden');
+                
+                if (editingProjectId) cancelEditing();
+            }
+
+            // A partir de aquí es código de UI para Superuser, Coordinator o Solo Lectura (Agenda global)
+
+            const auditPara = document.getElementById('lblAuditTrail');
+            if (auditPara) {
+                auditPara.innerHTML = `Último cambio por: <span class="text-slate-800 font-bold italic">${state.lastModifiedBy}</span> &nbsp;|&nbsp; Estado: <span id="saveStatusIndicator" class="text-emerald-600 font-bold">Conectado</span>`;
+            }
+
+            const activeTechs = state.technicians.filter(t => t.active);
+            const totalNetBaseHours = state.hoursPerDay * activeTechs.length;
+            document.getElementById('labelTotalNetHours').textContent = `${totalNetBaseHours.toFixed(1)} hs/día`;
+
+            // Construir ventana de 15 días
+            let viewportDays = [];
+            let viewBaseDate = new Date(state.viewStartDate + "T00:00:00");
+            for (let d = 0; d < 15; d++) {
+                let currentDay = new Date(viewBaseDate);
+                currentDay.setDate(viewBaseDate.getDate() + d);
+                viewportDays.push(currentDay.toISOString().split('T')[0]);
+            }
+
+            const firstDayLabel = getDayLabel(viewportDays[0]);
+            const lastDayLabel = getDayLabel(viewportDays[14]);
+            document.getElementById('labelViewportRange').textContent = `${firstDayLabel}  hasta  ${lastDayLabel}`;
+
+            let dailyData = [];
+            let maxDeficit = 0;
+            let peakDemandValue = 0;
+            let peakDayStr = "Sin tareas en vista";
+
+            let techDailySchedule = {}; 
+            state.technicians.forEach(t => {
+                techDailySchedule[t.id] = {};
+                viewportDays.forEach(dayStr => {
+                    techDailySchedule[t.id][dayStr] = [];
+                });
+            });
+
+            viewportDays.forEach((dayStr, index) => {
+                let totalWorkDemand = 0;
+                let activeProjects = [];
+                
+                state.projects.forEach(p => {
+                    let pStart = new Date(p.startStr + "T00:00:00");
+                    let pEnd = new Date(p.endStr + "T00:00:00");
+                    let currentDay = new Date(dayStr + "T00:00:00");
+
+                    if (currentDay >= pStart && currentDay <= pEnd) {
+                        const assignedTechIds = p.assignedTechIds ?? [];
+                        const techsCount = assignedTechIds.length;
+                        const workH = p.hoursPerTech ?? 8;
+                        
+                        const workEffort = techsCount * workH;
+                        const dayEffort = workEffort;
+
+                        totalWorkDemand += workEffort;
+
+                        let assignedNames = [];
+                        assignedTechIds.forEach(id => {
+                            const techObj = state.technicians.find(t => t.id === id);
+                            if (techObj) {
+                                assignedNames.push(techObj.name);
+                                if (techDailySchedule[id] && techDailySchedule[id][dayStr]) {
+                                    techDailySchedule[id][dayStr].push({
+                                        projId: p.id,
+                                        projName: p.name,
+                                        workHours: workH,
+                                        totalHours: workH
+                                    });
+                                }
+                            }
+                        });
+
+                        activeProjects.push({ 
+                            name: p.name, 
+                            techsCount: techsCount,
+                            techNames: assignedNames.join(', '),
+                            workHours: workH, 
+                            totalHours: dayEffort 
+                        });
+                    }
+                });
+
+                const dayDemand = totalWorkDemand;
+
+                let simulatedExtraTechs = 0;
+                state.simulations.forEach(s => {
+                    let sStart = new Date(s.startStr + "T00:00:00");
+                    let sEnd = new Date(s.endStr + "T00:00:00");
+                    let currentDay = new Date(dayStr + "T00:00:00");
+
+                    if (currentDay >= sStart && currentDay <= sEnd) {
+                        simulatedExtraTechs += s.count;
+                    }
+                });
+
+                let baseCapacity = totalNetBaseHours;
+                let simulatedCapacity = simulatedExtraTechs * state.hoursPerDay;
+                let totalCapacity = baseCapacity + simulatedCapacity;
+                let balance = totalCapacity - dayDemand;
+
+                if (balance < 0) {
+                    let deficit = Math.abs(balance);
+                    if (deficit > maxDeficit) {
+                        maxDeficit = deficit;
+                    }
+                }
+
+                if (dayDemand > peakDemandValue) {
+                    peakDemandValue = dayDemand;
+                    peakDayStr = getDayLabel(dayStr);
+                }
+
+                dailyData.push({
+                    dayIndex: index,
+                    dayStr: dayStr,
+                    demandWork: totalWorkDemand,
+                    demandTotal: dayDemand,
+                    baseCapacity: baseCapacity,
+                    simulatedCapacity: simulatedCapacity,
+                    totalCapacity: totalCapacity,
+                    balance: balance,
+                    simTechs: simulatedExtraTechs,
+                    projectsList: activeProjects
+                });
+            });
+
+            document.getElementById('kpiPeakDemand').textContent = `${peakDemandValue.toFixed(1)} hs/día`;
+            document.getElementById('kpiPeakWeeks').textContent = peakDemandValue > 0 ? `Pico el: ${peakDayStr}` : 'Sin demanda';
+            
+            document.getElementById('kpiMaxDeficit').textContent = `${maxDeficit.toFixed(1)} hs`;
+            const labelDeficit = document.getElementById('kpiDeficitStatus');
+            if (maxDeficit > 0) {
+                labelDeficit.textContent = "Alerta de sobrecarga de horas";
+                labelDeficit.className = "text-[10px] text-rose-600 font-bold";
+            } else {
+                labelDeficit.textContent = "Capacidad OK en estos 15 días";
+                labelDeficit.className = "text-[10px] text-emerald-600 font-bold";
+            }
+
+            const kpiAdvice = document.getElementById('kpiActionAdvice');
+            const alertPanel = document.getElementById('deficitWarningPanel');
+            const alertText = document.getElementById('deficitWarningText');
+
+            if (maxDeficit > 0) {
+                const equivTechsNeeded = Math.ceil(maxDeficit / state.hoursPerDay);
+                kpiAdvice.textContent = `Sumar +${equivTechsNeeded} Técnicos`;
+                kpiAdvice.className = "text-sm font-extrabold text-rose-600 mt-1";
+                alertPanel.classList.remove('hidden');
+                alertText.innerHTML = `Detectamos cuellos de botella en la vista actual por un déficit máximo de <strong>${maxDeficit.toFixed(1)} horas diarias</strong>. Te sugerimos programar <strong>${equivTechsNeeded} técnicos eventuales</strong> o balancear mejor tus asignaciones.`;
+            } else {
+                kpiAdvice.textContent = "Capacidad Cubierta";
+                kpiAdvice.className = "text-sm font-extrabold text-emerald-600 mt-1";
+                alertPanel.classList.add('hidden');
+            }
+
+            renderChart(dailyData, Math.max(80, peakDemandValue, totalNetBaseHours + 20));
+            renderTechManagement();
+            renderTechCheckboxes();
+            renderProjectList();
+            renderSimList();
+            renderAgendaGrid(viewportDays, techDailySchedule);
+
+            if (triggerSave) {
+                saveStateToCloud();
+            }
+        }
+
+        // --- 4. RENDERIZACIÓN DE COMPONENTES DE INTERFAZ ---
+
+        // Vista ESTRICTA para Técnico logueado. Solo ve SU DÍA. Sin acceso a la agenda global.
+        function renderTechnicianStrictView(associatedTechId, techName) {
+            const container = document.getElementById('techTodayTasksContainer');
+            container.innerHTML = '';
+
+            document.getElementById('techWelcomeName').textContent = `👷 ¡Buen día, ${techName}!`;
+            document.getElementById('techCurrentDayLabel').textContent = getDayLabel(TODAY_DATE);
+
+            if (!associatedTechId) {
+                container.innerHTML = `
+                    <div class="bg-amber-50 border border-amber-200 p-6 rounded-xl text-center">
+                        <span class="text-3xl mb-2 block">🚫</span>
+                        <p class="text-sm font-bold text-amber-800">Tu usuario no está vinculado a un técnico físico del plantel.</p>
+                        <p class="text-[11px] text-amber-700 mt-1 font-semibold">Hablá con un Administrador para que vincule tu cuenta desde la Consola de Seguridad, así podés ver tu agenda.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const todayTasks = [];
+            state.projects.forEach(p => {
+                let pStart = new Date(p.startStr + "T00:00:00");
+                let pEnd = new Date(p.endStr + "T00:00:00");
+                let today = new Date(TODAY_DATE + "T00:00:00");
+
+                if (today >= pStart && today <= pEnd) {
+                    if (p.assignedTechIds && p.assignedTechIds.includes(associatedTechId)) {
+                        todayTasks.push(p);
+                    }
+                }
+            });
+
+            if (todayTasks.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white p-10 rounded-xl border border-indigo-100 text-center shadow-inner">
+                        <span class="text-5xl block mb-3">🌴</span>
+                        <h4 class="text-base font-bold text-slate-800">¡No tenés tareas asignadas para hoy!</h4>
+                        <p class="text-xs text-slate-500 mt-1.5 font-medium">No estás en la planificación del día. Consultá con tu coordinador si surge alguna emergencia.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            todayTasks.forEach(task => {
+                const coWorkers = [];
+                task.assignedTechIds.forEach(tid => {
+                    if (tid !== associatedTechId) {
+                        const tObj = state.technicians.find(t => t.id === tid);
+                        if (tObj) coWorkers.push(tObj.name);
+                    }
+                });
+
+                const card = document.createElement('div');
+                card.className = "bg-white border-2 border-indigo-100 rounded-xl p-5 shadow-sm hover:border-indigo-300 transition duration-200";
+                
+                let coWorkersHtml = coWorkers.length > 0 
+                    ? coWorkers.map(name => `<span class="inline-block bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-md text-xs font-bold shadow-sm">👥 ${name}</span>`).join(' ')
+                    : `<span class="text-xs text-slate-400 font-semibold italic bg-slate-50 px-3 py-1 rounded-md border border-slate-100">Solitario (Sin acompañantes en esta tarea)</span>`;
+
+                card.innerHTML = `
+                    <div class="flex flex-col md:flex-row justify-between items-start gap-4 mb-4 pb-4 border-b border-slate-100">
+                        <div>
+                            <span class="text-[10px] font-bold tracking-widest text-indigo-500 uppercase">Orden de Trabajo Asignada</span>
+                            <h3 class="text-lg font-black text-slate-900 flex items-center gap-2 mt-1">
+                                <span class="w-3 h-3 rounded-full bg-indigo-600 block shadow-sm"></span>
+                                ${task.name}
+                            </h3>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm font-bold w-full md:w-auto">
+                            <span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-2 rounded-lg w-full text-center">
+                                ⏱️ Obra: ${task.hoursPerTech}h
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <span class="block text-[11px] text-slate-500 font-bold uppercase tracking-wider mb-2">Compañeros de Cuadrilla:</span>
+                        <div class="flex flex-wrap gap-2">
+                            ${coWorkersHtml}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Renderizar Gráfico
+        function renderChart(dailyData, maxScaleValue) {
+            const chartContainer = document.getElementById('chartBarsContainer');
+            const xLabelsContainer = document.getElementById('chartXLabels');
+            chartContainer.innerHTML = '';
+            xLabelsContainer.innerHTML = '';
+
+            dailyData.forEach((dd) => {
+                const demandHeightPercent = (dd.demandTotal / maxScaleValue) * 100;
+                const baseCapacityHeightPercent = (dd.baseCapacity / maxScaleValue) * 100;
+                const simulatedCapacityHeightPercent = (dd.simulatedCapacity / maxScaleValue) * 100;
+                const totalCapacityHeightPercent = (dd.totalCapacity / maxScaleValue) * 100;
+
+                const dayCol = document.createElement('div');
+                dayCol.className = "flex-1 h-full flex flex-col justify-end items-center relative group cursor-pointer";
+
+                let activeProjsHtml = '';
+                if (dd.projectsList.length > 0) {
+                    activeProjsHtml += `<div class="mt-2 pt-1.5 border-t border-slate-200 text-[10px] text-slate-500 font-normal space-y-1">
+                        <span class="font-bold text-slate-700">Detalle por Obra:</span><br>`;
+                    dd.projectsList.forEach(p => {
+                        const nameFormatted = p.name.length > 20 ? p.name.substring(0, 20) + '...' : p.name;
+                        activeProjsHtml += `• <strong>${nameFormatted}</strong><br>
+                        &nbsp;&nbsp;Asignados: <span class="text-indigo-600 font-bold">${p.techNames || "Nadie"}</span><br>
+                        &nbsp;&nbsp;(${p.workHours}h por tecnico = ${p.totalHours}h totales)<br>`;
+                    });
+                    activeProjsHtml += `</div>`;
+                } else {
+                    activeProjsHtml = '<p class="text-[10px] text-slate-400 italic mt-1">Sin actividades agendadas</p>';
+                }
+
+                const tooltip = `
+                    <div class="absolute bottom-full mb-2 hidden group-hover:block bg-white text-slate-800 text-[11px] p-3 rounded-lg border border-slate-200 shadow-2xl z-30 w-64 pointer-events-none">
+                        <p class="font-bold border-b border-slate-200 pb-1 mb-1.5 text-indigo-600">${getDayLabel(dd.dayStr)}</p>
+                        <p class="flex justify-between"><span>Hs de Trabajo Neto:</span> <span class="font-bold text-slate-700">${dd.demandWork.toFixed(1)} hs</span></p>
+                        <p class="flex justify-between"><span>Capac. Base:</span> <span class="font-bold text-emerald-600">${dd.baseCapacity.toFixed(1)} hs</span></p>
+                        ${dd.simTechs > 0 ? `<p class="flex justify-between text-cyan-600"><span>Con Refuerzos:</span> <span class="font-bold">+${dd.simulatedCapacity.toFixed(1)} hs</span></p>` : ''}
+                        <div class="border-t border-slate-200 mt-1.5 pt-1.5 flex justify-between font-bold">
+                            <span>Balance disponible:</span>
+                            <span class="${dd.balance >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${dd.balance >= 0 ? '+' : ''}${dd.balance.toFixed(1)} hs</span>
+                        </div>
+                        ${activeProjsHtml}
+                    </div>
+                `;
+
+                let barColorClass = "bg-indigo-500/80 border border-indigo-600";
+                if (dd.demandTotal > dd.totalCapacity) {
+                    barColorClass = "bg-rose-500/90 border border-rose-600";
+                } else if (dd.demandTotal > dd.baseCapacity) {
+                    barColorClass = "bg-cyan-500/90 border border-cyan-600";
+                }
+
+                dayCol.innerHTML = `
+                    ${tooltip}
+                    <div class="absolute w-full rounded-t transition-all duration-300" style="height: ${demandHeightPercent}%; bottom: 0; z-index: 2;">
+                        <div class="w-full h-full ${barColorClass} rounded-t-sm"></div>
+                    </div>
+                    <div class="absolute w-full bg-cyan-50 border-t border-x border-cyan-300/60 rounded-t-sm transition-all duration-300" style="height: ${totalCapacityHeightPercent}%; bottom: 0; z-index: 1;"></div>
+                    <div class="absolute w-full bg-emerald-50 border-t border-x border-emerald-300/60 rounded-t-sm transition-all duration-300" style="height: ${baseCapacityHeightPercent}%; bottom: 0; z-index: 0;"></div>
+                `;
+                chartContainer.appendChild(dayCol);
+
+                const xLabel = document.createElement('div');
+                xLabel.className = "flex-1 text-center font-bold text-[8px] md:text-[9px] text-slate-500 hover:text-indigo-600 transition leading-tight";
+                let dayNum = dd.dayStr.split('-')[2];
+                let monthNum = dd.dayStr.split('-')[1];
+                let dayName = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][new Date(dd.dayStr + "T00:00:00").getDay()];
+                // Modified chart labels here just in case! Month and day
+                xLabel.innerHTML = `${dayName}<br>${parseInt(dayNum)}/${parseInt(monthNum)}`;
+                xLabelsContainer.appendChild(xLabel);
+            });
+        }
+
+        // Renderizar Técnicos Nominados
+        function renderTechManagement() {
+            const container = document.getElementById('techListContainer');
+            container.innerHTML = '';
+
+            state.technicians.forEach(t => {
+                const item = document.createElement('div');
+                item.className = `flex justify-between items-center bg-white border ${t.active ? 'border-slate-200' : 'border-slate-100 opacity-60'} p-2 rounded-lg text-xs shadow-sm`;
+                
+                const isOperator = (state.currentRole === "superuser" || state.currentRole === "coordinator");
+                const disableAttr = isOperator ? '' : 'disabled';
+                const removeBtnHtml = isOperator ? `
+                    <button onclick="handleRemoveTech('${t.id}')" class="text-rose-500 hover:text-rose-700 p-1 rounded-md hover:bg-rose-50 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                ` : '';
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" ${t.active ? 'checked' : ''} ${disableAttr} onchange="toggleTechActive('${t.id}')" class="rounded text-indigo-600 bg-white border-slate-300 focus:ring-0 cursor-pointer disabled:cursor-not-allowed">
+                        <span class="font-bold text-slate-700">${t.name}</span>
+                    </div>
+                    ${removeBtnHtml}
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Renderizar checkboxes de formulario
+        function renderTechCheckboxes() {
+            const container = document.getElementById('techCheckboxesContainer');
+            const checkedIds = Array.from(document.querySelectorAll('.tech-checkbox-item:checked')).map(cb => cb.value);
+            container.innerHTML = '';
+
+            const activeTechs = state.technicians.filter(t => t.active);
+            if (activeTechs.length === 0) {
+                container.innerHTML = `<span class="text-[10px] text-slate-500 italic col-span-2">No hay técnicos activos. Cargalos arriba.</span>`;
+                return;
+            }
+
+            activeTechs.forEach(t => {
+                const isChecked = checkedIds.includes(t.id);
+                const label = document.createElement('label');
+                label.className = "flex items-center gap-2 p-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg cursor-pointer text-xs select-none shadow-sm";
+                label.innerHTML = `
+                    <input type="checkbox" name="assignedTechs" value="${t.id}" ${isChecked ? 'checked' : ''} onchange="updateEsfuerzoEquiv()" class="tech-checkbox-item rounded text-indigo-600 bg-white border-slate-300 focus:ring-0">
+                    <span class="truncate text-slate-700 font-bold">${t.name}</span>
+                `;
+                container.appendChild(label);
+            });
+        }
+
+        // Renderizar Matriz de Agenda
+        function renderAgendaGrid(viewportDays, techDailySchedule) {
+            const gridBody = document.getElementById('agendaGridBody');
+            gridBody.innerHTML = '';
+
+            const activeTechs = state.technicians.filter(t => t.active);
+            
+            if (activeTechs.length === 0) {
+                gridBody.innerHTML = `
+                    <tr>
+                        <td colspan="16" class="p-6 text-center text-slate-500 italic text-xs">
+                            Cargá al menos un técnico en tu plantel para visualizar la grilla.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            activeTechs.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/50 border-b border-slate-200";
+
+                let rowHtml = `
+                    <td class="p-3 font-bold text-slate-800 sticky left-0 bg-slate-50 border-r border-slate-200 z-10 flex items-center justify-between">
+                        <span class="truncate">${t.name}</span>
+                        <span class="text-[9px] font-bold text-slate-500 italic">${state.hoursPerDay}h cap</span>
+                    </td>
+                `;
+
+                viewportDays.forEach(dayStr => {
+                    const tasks = techDailySchedule[t.id]?.[dayStr] ?? [];
+                    let cellContent = '';
+                    let isOverworked = false;
+                    let dailyAccumHours = 0;
+
+                    if (tasks.length > 0) {
+                        tasks.forEach(task => {
+                            dailyAccumHours += task.totalHours;
+                        });
+
+                        isOverworked = dailyAccumHours > state.hoursPerDay;
+                        const firstTask = tasks[0];
+                        const nameFormatted = firstTask.projName.length > 12 ? firstTask.projName.substring(0, 11) + '..' : firstTask.projName;
+                        
+                        const borderClass = isOverworked ? 'border-rose-400 text-rose-800 bg-rose-50 shadow-sm' : 'border-indigo-200 text-indigo-950 bg-indigo-50/70 shadow-sm';
+                        const extraBadge = tasks.length > 1 ? `<span class="bg-indigo-600 text-white font-extrabold text-[8px] px-1 rounded-full absolute -top-1 -right-1">+${tasks.length - 1}</span>` : '';
+
+                        const cellTooltip = `
+                            <div class="absolute bottom-full mb-1 hidden group-hover:block bg-white text-slate-800 text-[10px] p-2 rounded-lg border border-slate-200 shadow-2xl z-30 w-44 pointer-events-none">
+                                <p class="font-bold border-b border-slate-200 pb-1 mb-1 text-emerald-600">${t.name} - ${getDayLabel(dayStr)}</p>
+                                ${tasks.map(tsk => `• <strong>${tsk.projName}</strong>: ${tsk.workHours}h`).join('<br>')}
+                                <div class="border-t border-slate-200 mt-1 pt-1 font-bold flex justify-between">
+                                    <span>Carga Total:</span>
+                                    <span class="${isOverworked ? 'text-rose-600' : 'text-emerald-600'}">${dailyAccumHours.toFixed(1)} hs</span>
+                                </div>
+                                ${isOverworked ? '<span class="text-[8px] text-rose-600 block font-bold mt-1">⚠️ ¡Excede jornada laboral!</span>' : ''}
+                            </div>
+                        `;
+
+                        cellContent = `
+                            <div class="relative group p-1.5 rounded-lg border text-[10px] text-center font-bold truncate ${borderClass}">
+                                ${cellTooltip}
+                                <span class="block truncate">${nameFormatted}</span>
+                                <span class="text-[9px] text-slate-600 font-bold">${dailyAccumHours.toFixed(1)} hs</span>
+                                ${extraBadge}
+                            </div>
+                        `;
+                    } else {
+                        cellContent = `<span class="text-[10px] text-slate-300 font-extrabold block text-center">-</span>`;
+                    }
+
+                    rowHtml += `
+                        <td class="p-2 border-r border-slate-200 relative align-middle">
+                            ${cellContent}
+                        </td>
+                    `;
+                });
+
+                tr.innerHTML = rowHtml;
+                gridBody.appendChild(tr);
+            });
+
+            // AQUÍ MODIFIQUÉ LA FUNCIÓN PARA QUE MUESTRE LA FECHA Y NO SOLO "DÍA X"
+            const headerRow = document.getElementById('agendaGridHeaderRow');
+            if (headerRow) {
+                const headerCells = headerRow.querySelectorAll('th');
+                viewportDays.forEach((dayStr, i) => {
+                    const d = new Date(dayStr + "T00:00:00");
+                    const dayNum = d.getDate();
+                    const monthNum = d.getMonth() + 1; // +1 porque los meses van de 0 a 11
+                    const dayName = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][d.getDay()];
+                    
+                    if (headerCells[i + 1]) {
+                        // Ahora inyectamos también el mes: ej. "Lun<br>10/3"
+                        headerCells[i + 1].innerHTML = `${dayName}<br>${dayNum}/${monthNum}`;
+                        if (d.getDay() === 0 || d.getDay() === 6) {
+                            headerCells[i + 1].className = "p-2 text-center w-24 text-slate-400 bg-slate-100/50 font-bold leading-tight border-r border-slate-200";
+                        } else {
+                            headerCells[i + 1].className = "p-2 text-center w-24 text-slate-700 font-extrabold leading-tight border-r border-slate-200";
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderProjectList() {
+            const tbody = document.getElementById('projectTableBody');
+            tbody.innerHTML = '';
+
+            document.getElementById('labelProjectCount').textContent = `${state.projects.length} Proyectos`;
+
+            if (state.projects.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="p-6 text-center text-slate-400 italic text-xs font-semibold">
+                            No hay trabajos agendados. Usá el formulario para registrar el primero.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const sortedProjects = [...state.projects].sort((a,b) => new Date(a.startStr) - new Date(b.startStr));
+
+            sortedProjects.forEach(p => {
+                let startD = new Date(p.startStr + "T00:00:00");
+                let endD = new Date(p.endStr + "T00:00:00");
+                const diffTime = Math.abs(endD - startD);
+                const daysCount = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                
+                const assignedTechIds = p.assignedTechIds ?? [];
+                const techsCount = assignedTechIds.length;
+                const workH = p.hoursPerTech ?? 8;
+                const dailyTotal = techsCount * workH;
+                const projectTotal = dailyTotal * daysCount;
+
+                let nameBadges = [];
+                assignedTechIds.forEach(id => {
+                    const techObj = state.technicians.find(t => t.id === id);
+                    if (techObj) {
+                        nameBadges.push(`<span class="inline-block bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm">${techObj.name}</span>`);
+                    }
+                });
+
+                const isOperator = (state.currentRole === "superuser" || state.currentRole === "coordinator");
+                const actionsHtml = isOperator ? `
+                    <button onclick="startEditProject('${p.id}')" class="p-2 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition mr-1" title="Editar Proyecto">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"/></svg>
+                    </button>
+                    <button onclick="removeProject('${p.id}')" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition" title="Remover Proyecto">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                    </button>
+                ` : `<span class="text-[10px] text-slate-400 font-semibold italic">👁️ Lectura</span>`;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-200 text-xs";
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-slate-800">
+                        ${p.name}
+                    </td>
+                    <td class="p-3 text-center">
+                        <span class="bg-slate-50 text-slate-700 px-2 py-1 rounded border border-slate-200 font-bold">
+                            ${getDayLabel(p.startStr)} ${daysCount > 1 ? `al ${getDayLabel(p.endStr)} (${daysCount} d)` : '(Un día)'}
+                        </span>
+                    </td>
+                    <td class="p-3 text-center">
+                        <div class="flex flex-wrap justify-center gap-1 max-w-[180px] mx-auto">
+                            ${nameBadges.length > 0 ? nameBadges.join('') : '<span class="text-rose-500 font-bold text-[10px]">Sin asignar</span>'}
+                        </div>
+                    </td>
+                    <td class="p-3 text-center text-slate-600 font-semibold">
+                        ${workH}h obra / tecnico<br>
+                        <span class="text-[10px] text-slate-400">(${dailyTotal} hs totales/día)</span>
+                    </td>
+                    <td class="p-3 text-center text-indigo-600 font-extrabold text-sm">${projectTotal} hs</td>
+                    <td class="p-3 text-right">
+                        ${actionsHtml}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderSimList() {
+            const container = document.getElementById('simListContainer');
+            const list = document.getElementById('simList');
+            list.innerHTML = '';
+
+            if (state.simulations.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+
+            state.simulations.forEach(s => {
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center text-xs bg-cyan-50 border border-cyan-200 p-2 rounded-lg";
+                
+                const isOperator = (state.currentRole === "superuser" || state.currentRole === "coordinator");
+                const removeSimBtn = isOperator ? `
+                    <button onclick="removeSimulation('${s.id}')" class="text-rose-500 hover:text-rose-700 p-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                ` : '';
+
+                item.innerHTML = `
+                    <span class="text-cyan-700 font-bold">+${s.count} Técnico(s) (${getDayLabel(s.startStr)} al ${getDayLabel(s.endStr)})</span>
+                    ${removeSimBtn}
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // --- 5. INTERACCIONES & CONTROLADORES DE EVENTO ---
+        const toggleTechActive = (id) => {
+            if (state.currentRole === "reader") return;
+            state.technicians = state.technicians.map(t => {
+                if (t.id === id) t.active = !t.active;
+                return t;
+            });
+            updateAppUI();
+        };
+
+        const handleAddTech = () => {
+            if (state.currentRole === "reader") return;
+            const input = document.getElementById('newTechName');
+            const name = input.value.trim();
+            if (!name) {
+                showTemporaryMessage("Escribí un nombre para el técnico.", "error");
+                return;
+            }
+
+            const duplicate = state.technicians.find(t => t.name.toLowerCase() === name.toLowerCase());
+            if (duplicate) {
+                showTemporaryMessage("Ya existe un técnico con este nombre.", "error");
+                return;
+            }
+
+            const newTech = { id: 't_' + Date.now(), name: name, active: true };
+            state.technicians.push(newTech);
+            input.value = '';
+            updateAppUI();
+            showTemporaryMessage(`Técnico ${name} sumado al plantel.`, "success");
+        };
+
+        const handleRemoveTech = (id) => {
+            if (state.currentRole === "reader") return;
+            const tech = state.technicians.find(t => t.id === id);
+            if (!tech) return;
+
+            const isAssigned = state.projects.some(p => p.assignedTechIds && p.assignedTechIds.includes(id));
+            if (isAssigned) {
+                if (!confirm(`El técnico ${tech.name} tiene tareas programadas. ¿Estás seguro que querés eliminarlo?`)) {
+                    return;
+                }
+                state.projects = state.projects.map(p => {
+                    p.assignedTechIds = p.assignedTechIds.filter(tid => tid !== id);
+                    return p;
+                });
+            }
+
+            state.technicians = state.technicians.filter(t => t.id !== id);
+            updateAppUI();
+            showTemporaryMessage(`Técnico removido del plantel.`, "info");
+        };
+
+        const updateEsfuerzoEquiv = () => {
+            const checkboxes = document.querySelectorAll('.tech-checkbox-item:checked');
+            const techsCount = checkboxes.length;
+            const workH = parseFloat(document.getElementById('projHoursPerTech').value) || 0;
+            const totalDailyDemand = techsCount * workH;
+            document.getElementById('labelEsfuerzoEquiv').textContent = `${totalDailyDemand.toFixed(1)} hs/día`;
+        };
+
+        const shiftViewportDays = (days) => {
+            let currentView = new Date(state.viewStartDate + "T00:00:00");
+            currentView.setDate(currentView.getDate() + days);
+            state.viewStartDate = currentView.toISOString().split('T')[0];
+            updateAppUI(false); 
+        };
+
+        const resetViewportToToday = () => {
+            state.viewStartDate = TODAY_DATE;
+            updateAppUI(false);
+            showTemporaryMessage("Calendario posicionado en el día de hoy.", "info");
+        };
+
+        const startEditProject = (id) => {
+            if (state.currentRole === "reader") return;
+            const p = state.projects.find(x => x.id === id);
+            if (!p) return;
+
+            editingProjectId = id;
+
+            document.getElementById('projName').value = p.name;
+            document.getElementById('projStart').value = p.startStr;
+            document.getElementById('projEnd').value = p.endStr;
+            document.getElementById('projHoursPerTech').value = p.hoursPerTech;
+
+            document.querySelectorAll('.tech-checkbox-item').forEach(cb => {
+                cb.checked = p.assignedTechIds.includes(cb.value);
+            });
+
+            document.getElementById('editingProjectName').textContent = p.name;
+            document.getElementById('editingBanner').classList.remove('hidden');
+            document.getElementById('cancelFormButton').classList.remove('hidden');
+            
+            document.getElementById('submitFormButton').innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Guardar Cambios
+            `;
+
+            updateEsfuerzoEquiv();
+            document.getElementById('projectForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+
+        const cancelEditing = () => {
+            editingProjectId = null;
+            document.getElementById('editingBanner').classList.add('hidden');
+            document.getElementById('cancelFormButton').classList.add('hidden');
+            
+            document.getElementById('submitFormButton').innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                Agendar en Calendario
+            `;
+
+            document.getElementById('projName').value = '';
+            document.getElementById('projHoursPerTech').value = '8';
+            
+            document.querySelectorAll('.tech-checkbox-item').forEach(cb => cb.checked = false);
+            updateEsfuerzoEquiv();
+        };
+
+        const handleProjectSubmit = (e) => {
+            e.preventDefault();
+            if (state.currentRole === "reader") return;
+            const name = document.getElementById('projName').value.trim();
+            const startStr = document.getElementById('projStart').value;
+            const endStr = document.getElementById('projEnd').value;
+            
+            const checkboxes = document.querySelectorAll('.tech-checkbox-item:checked');
+            let assignedTechIds = [];
+            checkboxes.forEach(cb => {
+                assignedTechIds.push(cb.value);
+            });
+
+            if (assignedTechIds.length === 0) {
+                showTemporaryMessage("Debés asignar al menos un técnico a la obra.", "error");
+                return;
+            }
+
+            const hoursPerTech = parseFloat(document.getElementById('projHoursPerTech').value) || 0;
+
+            if (new Date(startStr) > new Date(endStr)) {
+                showTemporaryMessage("La fecha de inicio no puede ser posterior a la de fin.", "error");
+                return;
+            }
+
+            if (editingProjectId) {
+                const index = state.projects.findIndex(p => p.id === editingProjectId);
+                if (index !== -1) {
+                    state.projects[index] = {
+                        id: editingProjectId,
+                        name: name,
+                        startStr: startStr,
+                        endStr: endStr,
+                        assignedTechIds: assignedTechIds,
+                        hoursPerTech: hoursPerTech
+                    };
+                }
+                editingProjectId = null;
+                document.getElementById('editingBanner').classList.add('hidden');
+                document.getElementById('cancelFormButton').classList.add('hidden');
+                document.getElementById('submitFormButton').innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    Agendar en Calendario
+                `;
+                showTemporaryMessage("Obra actualizada con éxito.", "success");
+            } else {
+                const newProj = {
+                    id: 'p_' + Date.now(),
+                    name: name,
+                    startStr: startStr,
+                    endStr: endStr,
+                    assignedTechIds: assignedTechIds,
+                    hoursPerTech: hoursPerTech
+                };
+                state.projects.push(newProj);
+                showTemporaryMessage("Servicio agendado nominalmente en el calendario.", "success");
+            }
+            
+            document.getElementById('projName').value = '';
+            document.getElementById('projHoursPerTech').value = '8';
+            document.querySelectorAll('.tech-checkbox-item').forEach(cb => cb.checked = false);
+            
+            updateEsfuerzoEquiv();
+            updateAppUI();
+        };
+
+        const handleSimSubmit = (e) => {
+            e.preventDefault();
+            if (state.currentRole === "reader") return;
+            const startStr = document.getElementById('simStart').value;
+            const endStr = document.getElementById('simEnd').value;
+            const count = parseInt(document.getElementById('simCount').value);
+
+            if (new Date(startStr) > new Date(endStr)) {
+                showTemporaryMessage("Rango de fechas inválido para la simulación.", "error");
+                return;
+            }
+
+            const newSim = { id: 's_' + Date.now(), startStr: startStr, endStr: endStr, count: count };
+            state.simulations.push(newSim);
+            updateAppUI();
+            showTemporaryMessage("Simulación de personal eventual aplicada.", "info");
+        };
+
+        const removeProject = (id) => {
+            if (state.currentRole === "reader") return;
+            if (editingProjectId === id) cancelEditing();
+            state.projects = state.projects.filter(p => p.id !== id);
+            updateAppUI();
+            showTemporaryMessage("Trabajo removido de las agendas.", "info");
+        };
+
+        const removeSimulation = (id) => {
+            if (state.currentRole === "reader") return;
+            state.simulations = state.simulations.filter(s => s.id !== id);
+            updateAppUI();
+        };
+
+        const loadDemoData = () => {
+            if (state.currentRole === "reader") return;
+            loadDemoDataInternal();
+            updateAppUI();
+            showTemporaryMessage("Se cargó la simulación diaria con fechas actuales.", "info");
+        };
+
+        // --- 6. EXPORTACIÓN DE DATOS A EXCEL (CSV) ---
+        const exportToCSV = () => {
+            let csvContent = "\uFEFF"; 
+            
+            csvContent += "CONFIGURACIÓN DEL EQUIPO DE TRABAJO\n";
+            csvContent += `Jornada laboral típica;${state.hoursPerDay} hs\n`;
+            csvContent += `Técnicos totales registrados;${state.technicians.length}\n`;
+            csvContent += `Técnicos activos en calle;${state.technicians.filter(t => t.active).length}\n\n`;
+
+            csvContent += "CRONOGRAMA DE ASIGNACIÓN NOMINAL DE TÉCNICOS\n";
+            csvContent += "Cliente / Tarea;Fecha Inicio;Fecha Fin;Duración (Días);Técnicos Asignados;Trabajo Neto (hs/día);Carga Diaria Total (hs);Carga Total Obra (hs)\n";
+            
+            state.projects.forEach(p => {
+                let startD = new Date(p.startStr + "T00:00:00");
+                let endD = new Date(p.endStr + "T00:00:00");
+                const diffTime = Math.abs(endD - startD);
+                const daysCount = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                
+                const assignedTechIds = p.assignedTechIds ?? [];
+                const techsCount = assignedTechIds.length;
+                const workH = p.hoursPerTech ?? 8;
+                const dailyTotal = techsCount * workH;
+                const projectTotal = dailyTotal * daysCount;
+
+                let names = [];
+                assignedTechIds.forEach(id => {
+                    const techObj = state.technicians.find(t => t.id === id);
+                    if (techObj) names.push(techObj.name);
+                });
+                
+                csvContent += `"${p.name.replace(/"/g, '""')}";${p.startStr};${p.endStr};${daysCount};"${names.join(', ')}";${workH};${dailyTotal};${projectTotal}\n`;
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `agenda_tecnica_coordinada_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showTemporaryMessage("Exportación descargada. Abrila directamente en Excel.", "success");
+        };
+
+        // --- 7. CONTROL DE SEGURIDAD NOMINATIVO (LOGINS Y CUENTAS) ---
+        const openLoginModal = () => {
+            document.getElementById('inputUsername').value = '';
+            document.getElementById('inputPassword').value = '';
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('inputUsername').focus();
+        };
+
+        const closeLoginModal = () => {
+            document.getElementById('loginModal').classList.add('hidden');
+        };
+
+        const submitLogin = () => {
+            const userIn = document.getElementById('inputUsername').value.trim().toLowerCase();
+            const passIn = document.getElementById('inputPassword').value.trim();
+
+            if (!userIn || !passIn) {
+                showTemporaryMessage("Escribí un usuario y una contraseña.", "error");
+                return;
+            }
+
+            const matchedUser = state.users[userIn];
+            if (!matchedUser) {
+                showTemporaryMessage("El usuario no existe. Solicitá el alta a un Administrador.", "error");
+                return;
+            }
+
+            if (matchedUser.password === passIn) {
+                state.currentRole = matchedUser.role;
+                state.currentUser = userIn;
+                closeLoginModal();
+                updateAppUI(false); 
+                showTemporaryMessage(`¡Bienvenido, ${matchedUser.name || userIn}! Acceso concedido.`, "success");
+            } else {
+                showTemporaryMessage("Contraseña incorrecta. Probá nuevamente.", "error");
+            }
+        };
+
+        const logoutAdmin = () => {
+            state.currentRole = "reader";
+            state.currentUser = null;
+            updateAppUI(false);
+            showTemporaryMessage("Cerraste sesión de forma segura.", "info");
+        };
+
+        // --- 8. CONSOLA DE SEGURIDAD DE SUPERUSUARIO (ADMINISTRACIÓN EN VIVO) ---
+        const openSuperSecurityPanel = () => {
+            if (state.currentRole !== "superuser") return;
+            
+            renderUserManagementList();
+            populateAssociatedTechSelect();
+            
+            document.getElementById('newRealName').value = '';
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newUserPass').value = '';
+            document.getElementById('newUserRole').value = 'coordinator';
+            document.getElementById('divTechAssociation').classList.add('hidden');
+
+            document.getElementById('superSecurityPanelModal').classList.remove('hidden');
+        };
+
+        const closeSuperSecurityPanel = () => {
+            document.getElementById('superSecurityPanelModal').classList.add('hidden');
+        };
+
+        const toggleNewUserRoleChange = () => {
+            const role = document.getElementById('newUserRole').value;
+            const divAssoc = document.getElementById('divTechAssociation');
+            if (role === 'technician') {
+                divAssoc.classList.remove('hidden');
+            } else {
+                divAssoc.classList.add('hidden');
+            }
+        };
+
+        function populateAssociatedTechSelect() {
+            const select = document.getElementById('selectAssociatedTech');
+            if (!select) return;
+            select.innerHTML = '';
+
+            const activeTechs = state.technicians;
+            if (activeTechs.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = "";
+                opt.textContent = "⚠️ No hay técnicos cargados en el Panel 1";
+                select.appendChild(opt);
+                return;
+            }
+
+            activeTechs.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = t.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function renderUserManagementList() {
+            const listContainer = document.getElementById('userListContainer');
+            listContainer.innerHTML = '';
+
+            Object.keys(state.users).forEach(uKey => {
+                const uObj = state.users[uKey];
+                const card = document.createElement('div');
+                card.className = "bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:border-purple-300 transition-colors";
+                
+                let roleBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                let roleLabel = 'Coordinador';
+                
+                if (uObj.role === "superuser") {
+                    roleBadgeClass = 'bg-purple-100 text-purple-800 border-purple-300';
+                    roleLabel = 'Superuser';
+                } else if (uObj.role === "technician") {
+                    roleBadgeClass = 'bg-indigo-100 text-indigo-800 border-indigo-300';
+                    roleLabel = 'Técnico';
+                }
+
+                let techInfo = '';
+                if (uObj.role === "technician" && uObj.associatedTechId) {
+                    const techFound = state.technicians.find(t => t.id === uObj.associatedTechId);
+                    if (techFound) {
+                        techInfo = ` <span class="text-[10px] text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 shadow-sm">Vínculo Físico: <b>${techFound.name}</b></span>`;
+                    } else {
+                        techInfo = ` <span class="text-[10px] text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">⚠️ Vínculo Roto (Reasignar)</span>`;
+                    }
+                }
+
+                const showDeleteBtn = (uKey !== state.currentUser);
+
+                card.innerHTML = `
+                    <div class="flex-1 min-w-[200px]">
+                        <div class="flex items-center gap-2 flex-wrap mb-1">
+                            <span class="font-extrabold text-slate-800 text-sm">${uObj.name || uKey}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded border font-bold ${roleBadgeClass}">${roleLabel}</span>
+                            ${techInfo}
+                        </div>
+                        <p class="text-[11px] text-slate-500 font-semibold mt-1">Usuario: <span class="text-slate-900 font-bold bg-slate-100 px-1.5 rounded">${uKey}</span> | Clave: <span class="font-bold text-indigo-600 tracking-wider">${uObj.password}</span></p>
+                    </div>
+                    <div class="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+                        <button onclick="handlePromptResetPassword('${uKey}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold transition border border-slate-300 shadow-sm">
+                            Cambiar Clave
+                        </button>
+                        ${showDeleteBtn ? `
+                            <button onclick="handleDeleteUser('${uKey}')" class="p-1.5 text-rose-500 hover:bg-rose-50 hover:text-rose-700 rounded-lg transition" title="Dar de baja usuario">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                            </button>
+                        ` : '<span class="text-[9px] text-slate-400 font-bold italic pr-2">Esta es tu sesión</span>'}
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        const handleCreateUser = (e) => {
+            e.preventDefault();
+            if (state.currentRole !== "superuser") return;
+
+            const name = document.getElementById('newRealName').value.trim();
+            const rawUser = document.getElementById('newUsername').value.trim().toLowerCase();
+            const pass = document.getElementById('newUserPass').value.trim();
+            const role = document.getElementById('newUserRole').value;
+
+            const usernameClean = rawUser.replace(/[^a-z0-9_]/g, '');
+
+            if (usernameClean.length < 3) {
+                showTemporaryMessage("El usuario debe tener al menos 3 caracteres (solo letras, números y _).", "error");
+                return;
+            }
+
+            if (pass.length < 4) {
+                showTemporaryMessage("La contraseña debe tener al menos 4 caracteres.", "error");
+                return;
+            }
+
+            if (state.users[usernameClean]) {
+                showTemporaryMessage("El nombre de usuario ya está registrado.", "error");
+                return;
+            }
+
+            const newUserData = {
+                password: pass,
+                role: role,
+                name: name
+            };
+
+            if (role === 'technician') {
+                const assocTechId = document.getElementById('selectAssociatedTech').value;
+                if (!assocTechId) {
+                    showTemporaryMessage("Para crear un Técnico, debés vincularlo a un miembro del plantel activo.", "error");
+                    return;
+                }
+                newUserData.associatedTechId = assocTechId;
+            }
+
+            state.users[usernameClean] = newUserData;
+            updateAppUI(true); 
+            renderUserManagementList(); 
+
+            document.getElementById('newRealName').value = '';
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newUserPass').value = '';
+            document.getElementById('newUserRole').value = 'coordinator';
+            document.getElementById('divTechAssociation').classList.add('hidden');
+            
+            showTemporaryMessage(`Usuario '${usernameClean}' registrado de forma exitosa.`, "success");
+        };
+
+        const handleDeleteUser = (uKey) => {
+            if (state.currentRole !== "superuser") return;
+            if (uKey === state.currentUser) return; 
+
+            if (!confirm(`¿Estás seguro que querés remover al usuario '${uKey}' del sistema? Perderá el acceso de inmediato.`)) {
+                return;
+            }
+
+            delete state.users[uKey];
+            updateAppUI(true); 
+            renderUserManagementList();
+            showTemporaryMessage(`El usuario '${uKey}' fue dado de baja.`, "info");
+        };
+
+        const handlePromptResetPassword = (uKey) => {
+            if (state.currentRole !== "superuser") return;
+
+            const newPass = prompt(`Establecé la contraseña nueva para el usuario '${uKey}':`, state.users[uKey].password);
+            if (newPass === null) return; 
+
+            const passClean = newPass.trim();
+            if (passClean.length < 4) {
+                showTemporaryMessage("La clave debe tener como mínimo 4 caracteres.", "error");
+                return;
+            }
+
+            state.users[uKey].password = passClean;
+            updateAppUI(true); 
+            renderUserManagementList();
+            showTemporaryMessage(`Contraseña del usuario '${uKey}' modificada.`, "success");
+        };
+
+        // --- 9. AUXILIARES DE INTERFAZ ---
+        function updateConnectionStatus(text, color) {
+            const badge = document.getElementById('badgeConnStatus');
+            if (badge) {
+                badge.textContent = text;
+                badge.className = `text-[10px] px-2.5 py-1 rounded-full bg-${color}-100 text-${color}-800 border border-${color}-200 font-bold`;
+            }
+        }
+
+        function setFormDefaultDates() {
+            document.getElementById('projStart').value = TODAY_DATE;
+            document.getElementById('projEnd').value = TODAY_DATE;
+            
+            let nextW = new Date(_systemDateObj); nextW.setDate(nextW.getDate() + 7);
+            document.getElementById('simStart').value = nextW.toISOString().split('T')[0];
+            let nextWEnd = new Date(nextW); nextWEnd.setDate(nextWEnd.getDate() + 1);
+            document.getElementById('simEnd').value = nextWEnd.toISOString().split('T')[0];
+        }
+
+        function showTemporaryMessage(text, type = "success") {
+            const container = document.createElement('div');
+            let color = "bg-emerald-600 border-emerald-500 text-white";
+            if (type === "error") color = "bg-rose-600 border-rose-500 text-white";
+            if (type === "info") color = "bg-indigo-600 border-indigo-500 text-white";
+
+            container.className = `fixed bottom-6 right-6 ${color} border font-bold text-xs px-4 py-3 rounded-lg shadow-xl z-50 transition-all duration-300 transform translate-y-2 opacity-0`;
+            container.textContent = text;
+            document.body.appendChild(container);
+
+            setTimeout(() => {
+                container.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                container.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => container.remove(), 300);
+            }, 4500);
+        }
+
+        // --- 10. GLOBAL EXPORTS ---
+        window.handleProjectSubmit = handleProjectSubmit;
+        window.handleSimSubmit = handleSimSubmit;
+        window.removeProject = removeProject;
+        window.removeSimulation = removeSimulation;
+        window.loadDemoData = loadDemoData;
+        window.exportToCSV = exportToCSV;
+        window.updateEsfuerzoEquiv = updateEsfuerzoEquiv;
+        window.shiftViewportDays = shiftViewportDays;
+        window.resetViewportToToday = resetViewportToToday;
+        window.handleAddTech = handleAddTech;
+        window.handleRemoveTech = handleRemoveTech;
+        window.toggleTechActive = toggleTechActive;
+        window.startEditProject = startEditProject;
+        window.cancelEditing = cancelEditing;
+        
+        window.openLoginModal = openLoginModal;
+        window.closeLoginModal = closeLoginModal;
+        window.submitLogin = submitLogin;
+        window.logoutAdmin = logoutAdmin;
+        
+        window.openSuperSecurityPanel = openSuperSecurityPanel;
+        window.closeSuperSecurityPanel = closeSuperSecurityPanel;
+        window.handleCreateUser = handleCreateUser;
+        window.handleDeleteUser = handleDeleteUser;
+        window.handlePromptResetPassword = handlePromptResetPassword;
+        window.toggleNewUserRoleChange = toggleNewUserRoleChange;
+
+        // Init
+        setFormDefaultDates();
+        initFirebase();
+
+        document.getElementById('inputHoursPerDay').addEventListener('change', (e) => {
+            state.hoursPerDay = Math.max(1, parseInt(e.target.value) || 8);
+            updateAppUI();
+        });
+
+    </script>
+</body>
+</html>
