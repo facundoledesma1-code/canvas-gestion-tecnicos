@@ -700,7 +700,7 @@
         const saveStateToCloud = async () => {
             if (!db || !auth || !auth.currentUser || isSyncingFromCloud) return;
             
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const appId = 'gestion-trabajo-tecnico';
             const stateDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'capacity_planner', 'shared_state_auth_v2');
 
             try {
